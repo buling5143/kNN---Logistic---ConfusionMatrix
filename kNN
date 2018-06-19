@@ -1,0 +1,190 @@
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt1
+from sklearn import cross_validation, neighbors
+from sklearn.metrics import confusion_matrix
+import numpy as np
+from collections import defaultdict 
+import seaborn as sns
+#import pylab as pl
+
+def getData(upperK):      
+        df = pd.read_excel('KnnFile.xlsx', sheetname='Sheet1')
+        #trainingSet, testSet = [], []        
+        df.drop(['TransId'], 1, inplace=True )
+        df.drop(['AccountId'], 1, inplace=True )
+        df.drop(['Date'], 1, inplace=True )
+        return df #, trainingSet, testSet
+
+def getStats(truePos, falsePos, trueNeg, falseNeg, toPrint = True):
+    accur = accuracy(truePos, falsePos, trueNeg, falseNeg)
+    sens = sensitivity(truePos, falseNeg)
+    spec = specificity(trueNeg, falsePos)
+    ppv = posPredVal(truePos, falsePos)
+    if toPrint:
+        print(' Accuracy =', round(accur, 3))
+        print(' Sensitivity =', round(sens, 3))
+        print(' Specificity =', round(spec, 3))
+        print(' Pos. Pred. Val. =', round(ppv, 3))
+    return (accur, sens, spec, ppv)
+
+def accuracy(truePos, falsePos, trueNeg, falseNeg):
+    numerator = truePos + trueNeg
+    denominator = truePos + trueNeg + falsePos + falseNeg
+    return numerator/denominator
+
+def sensitivity(truePos, falseNeg):
+    try:
+        return truePos/(truePos + falseNeg)
+    except ZeroDivisionError:
+        return float('nan')
+    
+def specificity(trueNeg, falsePos):
+    try:
+        return trueNeg/(trueNeg + falsePos)
+    except ZeroDivisionError:
+        return float('nan')
+    
+def posPredVal(truePos, falsePos):
+    try:
+        return truePos/(truePos + falsePos)
+    except ZeroDivisionError:
+        return float('nan')
+    
+def negPredVal(trueNeg, falseNeg):
+    try:
+        return trueNeg/(trueNeg + falseNeg)
+    except ZeroDivisionError:
+        return float('nan')
+
+upperK=40
+print ("Getting data...")
+df1  = getData(upperK)
+print ("Done executing get data....Calling cross validation...")
+X = np.array(df1.drop(['AH'], 1)) 
+y = np.array(df1['AH']) 
+X_train, X_test, y_train, y_test = cross_validation.train_test_split(X, y, test_size=0.2)
+error = []
+print ("Returned from cross validation...")
+
+ROC = defaultdict(list)
+Measures = defaultdict(list)
+
+lst = []
+lst1 = []  
+ 
+for k in range(1,upperK):
+    clf = neighbors.KNeighborsClassifier(k)
+    clf.fit(X_train, y_train)
+    accracy = clf.score(X_test, y_test)
+    #print (accracy)
+    pred_y = clf.predict(X_test) 
+    error.append(np.mean(pred_y!= y_test))       
+    
+    tn, fp, fn, tp = confusion_matrix(pred_y, y_test).ravel()           
+    lst.extend([tn, fp, fn, tp])   
+    ROC[k].append(lst) #collect the values in the dictionary
+    lst = []   #Once appended into the dictionary, re-int list to empty list
+        
+    accur, sens, spec, ppv = getStats(tp, fp, tn, fn, False)     
+    accur = round(accur,3)
+    sens = round(sens,3)
+    spec = round(spec,3)
+    ppv = round(ppv,3)    
+    lst1.extend([round(accur,3), round(sens,3),\
+                 round(spec,3), round(ppv,3)])      
+    Measures[k].append(lst1)
+    lst1 = []  #Once appended into the dictionary, re-int list to empty list
+    
+    j = 0    
+    MisclassifiedCount = []
+    CorrectClassificationCount = []       
+    for i in range (0, len(y_test)):
+            if (y_test[j] != pred_y[j]):
+                MisclassifiedCount.append(X_test[j])
+            else: 
+                CorrectClassificationCount.append(X_test[j])                
+            j = j + 1
+
+#    print("For cluster size of k=" + str(k))
+#    print("       Mis-classified transactions" + str(len(MisclassifiedCount))) 
+#    print("       Correctly Classified transactions" + str(len(CorrectClassificationCount)))     
+#    print ("Correctly classified vectors are")
+#    for x in CorrectClassificationCount:
+#          print (x)       
+#    print ("Mis-classified vectors are")
+#    for x in CorrectClassificationCount:
+#          print (x)        
+            
+plt.figure(figsize=(12, 6))  
+plt.plot(range(1, 40), error, color='red', linestyle='dashed', marker='o',  
+         markerfacecolor='blue', markersize=10)
+plt.title('Error Rate K Value')  
+plt.xlabel('K Value')  
+plt.ylabel('Mean Error')
+   
+#print (ROC)
+#print (Measures)      
+
+k = np.array(Measures.keys(), dtype=str)
+v = np.array(Measures.values(), dtype=str)
+sns.set()
+plt1.plot(k, v)
+plt.title('Accuracy, Sensitivity, Specificity, PositivePredictiveValue')  
+#plt.xlabel('K Value')  
+
+plt.ylabel('Accuracy, Sensitivity, Specificity, PositivePredictiveValue')
+plt1.show()
+
+#print (k)
+##for i in len(list(Measures.values())):
+#    print (v[0:0])
+
+
+
+#
+#lists = sorted(Measures.items())
+#
+#x, y = zip(*lists)
+#print (y[0][0])
+#
+#plt1.plot(x[0], y[0][0], color='red', linestyle='dashed', marker='o',  
+#         markerfacecolor='blue', markersize=10)
+
+#
+#plt1.plot(x,x)
+#plt1.show()
+
+#plt1.figure(figsize=(12, 6))  
+#plt1.plot(k, v, color='red', linestyle='dashed', marker='o',  
+#         markerfacecolor='blue', markersize=10)
+#plt1.hist(k,v)
+#plt1.title('# of Neighbors vs Ratios ')  
+#plt1.xlabel('K Value')  
+#plt1.ylabel('accur, sens, spec, ppv')
+#plt1.show()
+
+#k = Measures.keys()
+#v = Measures.values()
+#print (k[0])
+#print (v[0][1])
+
+#for key in k:
+#    print(key)
+#    for value in v:        
+#        print (Measure.values())
+#    plt1.plot(k, y[0][0], color='red', linestyle='dashed', marker='o',  
+#         markerfacecolor='blue', markersize=10)
+#  
+#k = Measures.items(k)
+    
+#print (d)
+
+
+
+
+#d = {int(k):[int(i) for i in v] for k,v in d.items()}
+#for key,value in Measures.items():
+#   plt1.hist(value)
+   

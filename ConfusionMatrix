@@ -1,0 +1,96 @@
+#pd.set_option('display.max_rows', DISPLAY_MAX_ROWS)
+#import matplotlib.pyplot as plt
+#import seaborn as sns
+#import numpy as np
+#import scipy.stats as stat
+#import matplotlib.rcsetup as rcsetup
+#from sklearn.preprocessing import scale
+#from sklearn.decomposition import PCA
+#from IPython.display import display, HTML
+#from sklearn import datasets
+#from sklearn.linear_model import LogisticRegression
+#from sklearn.feature_selection import RFE
+#import statsmodels.api as sm
+#from StatLib import *
+
+from sklearn.metrics import confusion_matrix
+import pandas as pd
+
+def runConfusion():
+      
+       
+        df = pd.read_excel('Confusion.xlsx', sheetname='Confusion')
+       
+        ActualList     = df['Actual'].values
+        PredictedList   = df['Predicted'].values
+                       
+#        df = pd.DataFrame(
+#                          {
+#                           'actual': actual,  			                    
+#                           'predicted': predicted
+#                          }                           
+#                        )
+#        
+#        ActualList   = df['actual'].values
+#        PredictedList = df['predicted'].values
+        
+        tn, fp, fn, tp = confusion_matrix(ActualList, PredictedList).ravel()
+        
+        print ("\n true negative  = " + str(tn))
+        print ("false positive = " + str(fp))
+        print ("false negative = " + str(fn))
+        print ("true positive  =  " + str(tp) + "\n")  
+        
+        accur, sens, spec, ppv = getStats(tp, fp, tn, fn)
+        # use accur, sens, spec, ppv if needed
+        
+
+def accuracy(truePos, falsePos, trueNeg, falseNeg):
+    numerator = truePos + trueNeg
+    denominator = truePos + trueNeg + falsePos + falseNeg
+    return numerator/denominator
+
+def sensitivity(truePos, falseNeg):
+    try:
+        return truePos/(truePos + falseNeg)
+    except ZeroDivisionError:
+        return float('nan')
+    
+def specificity(trueNeg, falsePos):
+    try:
+        return trueNeg/(trueNeg + falsePos)
+    except ZeroDivisionError:
+        return float('nan')
+    
+def posPredVal(truePos, falsePos):
+    try:
+        return truePos/(truePos + falsePos)
+    except ZeroDivisionError:
+        return float('nan')
+    
+def negPredVal(trueNeg, falseNeg):
+    try:
+        return trueNeg/(trueNeg + falseNeg)
+    except ZeroDivisionError:
+        return float('nan')
+       
+def getStats(truePos, falsePos, trueNeg, falseNeg, toPrint = True):
+    accur = accuracy(truePos, falsePos, trueNeg, falseNeg)
+    sens = sensitivity(truePos, falseNeg)
+    spec = specificity(trueNeg, falsePos)
+    ppv = posPredVal(truePos, falsePos)
+    if toPrint:
+        print(' Accuracy =', round(accur, 3))
+        print(' Sensitivity =', round(sens, 3))
+        print(' Specificity =', round(spec, 3))
+        print(' Positive Predictive Value =', round(ppv, 3))
+    return (accur, sens, spec, ppv)
+        
+       
+       
+#==============================================================================
+# After the file is set up manually/in an automated way use the call below
+# to come up with proportions that can be further analyzed through a z-test
+#==============================================================================
+
+runConfusion()
